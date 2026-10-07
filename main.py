@@ -1,16 +1,27 @@
-# File name: lhms.py
-# Student name: YOUR NAME HERE
-# Description: Console-based LANGHAM Hotel Management System (LHMS).
-#              Adds, deletes, displays, allocates and bills rooms,
-#              and saves room allocations to a text file.
-# Date: 06/10/2026
+# File name: LHMS.py
+# Student name: YOUR NAME
+# Student ID: STUDENTID
+# Description: Console-based LANGHAM Hotel Management System (LHMS). It adds, deletes,
+#              allocates and bills rooms, and saves room allocations to a text file.
+# Date: DD/MM/YYYY
 
-import datetime
+try:
+    import datetime
+except ImportError:  # Handles ImportError
+    print("The datetime module is missing, so LHMS cannot start.")
+    exit()
+
+"""
+Room rules used in this program:
+- status is either "Available" or "Allocated"
+- allocated_to holds the customer name, or an empty string when the room is free
+- a bill adds 15% GST after the discount is taken off
+"""
 
 FILE_NAME = "LHMS_STUDENTID.txt"
+BACKUP_PREFIX = "LHMS_STUDENTID_Backup_"
 GST_RATE = 0.15
 
-# Global data: each room is a dictionary
 rooms = [
     {"room_no": 101, "room_type": "Single", "price_per_night": 150.0, "status": "Available", "allocated_to": ""},
     {"room_no": 102, "room_type": "Double", "price_per_night": 220.0, "status": "Available", "allocated_to": ""},
@@ -18,209 +29,265 @@ rooms = [
 ]
 
 
-def find_room(room_no):
-    """Return the room with this number, or None if it is not in the list."""
+def add_room():
+    """Add a new room to the rooms list."""
+    try:
+        room_no = int(input("Room number: "))
+        room_type = input("Room type (Single/Double/Suite): ").capitalize()
+        price = float(input("Price per night: "))
+    except ValueError:  # Handles ValueError
+        print("Room number and price must be numbers.")
+        return
+
+    if price <= 0:
+        print("Price must be more than 0.")
+        return
+
     for room in rooms:
         if room["room_no"] == room_no:
-            return room
-    return None
-
-
-def add_room():
-    """Add one or more new rooms to the rooms list."""
-    count = int(input("How many rooms do you want to add? "))
-
-    for i in range(count):
-        print(f"\nRoom {i + 1} of {count}")
-        room_no = int(input("Room number: "))
-
-        if find_room(room_no) is not None:
             print("That room number already exists.")
-            continue
+            return
 
-        room_type = input("Room type (Single/Double/Suite): ")
-        price = float(input("Price per night: "))
-
-        new_room = {
-            "room_no": room_no,
-            "room_type": room_type,
-            "price_per_night": price,
-            "status": "Available",
-            "allocated_to": "",
-        }
-        rooms.append(new_room)
-        print(f"Room {room_no} added.")
+    rooms.append({"room_no": room_no, "room_type": room_type, "price_per_night": price,
+                  "status": "Available", "allocated_to": ""})
+    print("Room " + str(room_no) + " added.")
 
 
 def delete_room():
-    """Delete a room from the list."""
-    room_no = int(input("Enter the room number to delete: "))
-    room = find_room(room_no)
+    """Delete a room from the rooms list using its list number."""
+    if len(rooms) == 0:
+        print("There are no rooms to delete.")
+        return
 
-    if room is None:
-        print("Room not found.")
-    elif room["status"] == "Allocated":
-        # A booked room cannot be removed until the guest checks out
+    display_rooms()
+    try:
+        choice = int(input("Enter the list number of the room to delete: "))
+    except ValueError:  # Handles ValueError
+        print("Please enter a whole number.")
+        return
+
+    # A negative index would count from the end of the list and delete the wrong room
+    if choice < 1:
+        print("The list number must be 1 or more.")
+        return
+
+    try:
+        room = rooms[choice - 1]
+    except IndexError:  # Handles IndexError
+        print("There is no room with that list number.")
+        return
+
+    if room["status"] == "Allocated":
         print("This room is allocated. Bill and de-allocate it first.")
-    else:
-        rooms.remove(room)
-        print(f"Room {room_no} deleted.")
+        return
+
+    rooms.remove(room)
+    print("Room " + str(room["room_no"]) + " deleted.")
 
 
 def display_rooms():
-    """Show the details of every room."""
-    if len(rooms) == 0:
-        print("There are no rooms in the system.")
+    """Show all rooms and the average price per night."""
+    total_price = 0
+    for room in rooms:
+        total_price += room["price_per_night"]
+
+    try:
+        average_price = total_price / len(rooms)
+    except ZeroDivisionError:  # Handles ZeroDivisionError
+        print("No rooms have been added yet.")
         return
 
-    print(f"\n{'Room':<8}{'Type':<10}{'Price/Night':<14}{'Status':<12}")
-    print("-" * 44)
-    for room in rooms:
-        price = f"${room['price_per_night']:.2f}"
-        print(f"{room['room_no']:<8}{room['room_type']:<10}{price:<14}{room['status']:<12}")
+    print(f"{'No.':<5}{'Room':<8}{'Type':<10}{'Price':<10}{'Status':<10}")
+    for i in range(len(rooms)):
+        room = rooms[i]
+        print(f"{i + 1:<5}{room['room_no']:<8}{room['room_type']:<10}"
+              f"${room['price_per_night']:<9.2f}{room['status']:<10}")
+    print(f"Average price per night: ${average_price:.2f}")
 
 
 def allocate_room():
-    """Book an available room for a customer."""
-    room_no = int(input("Enter the room number to allocate: "))
-    room = find_room(room_no)
+    """Allocate an available room to a customer."""
+    try:
+        room_no = int(input("Room number to allocate: "))
+    except ValueError:  # Handles ValueError
+        print("Room number must be a whole number.")
+        return
 
-    if room is None:
-        print("Room not found.")
-    elif room["status"] == "Allocated":
-        print(f"Room {room_no} is already allocated to {room['allocated_to']}.")
-    else:
-        customer = input("Customer name: ")
-        room["status"] = "Allocated"
-        room["allocated_to"] = customer
-        print(f"Room {room_no} allocated to {customer}.")
+    for room in rooms:
+        if room["room_no"] == room_no:
+            if room["status"] == "Allocated":
+                print("That room is already allocated.")
+                return
+            customer = input("Customer name: ")
+            room["status"] = "Allocated"
+            room["allocated_to"] = customer
+            print("Room " + str(room_no) + " allocated to " + customer + ".")
+            return
+
+    print("Room number not found.")
 
 
 def display_allocations():
-    """Show the rooms that are currently allocated."""
-    found = False
-
-    print(f"\n{'Room':<8}{'Type':<10}{'Price/Night':<14}{'Customer':<20}")
-    print("-" * 52)
+    """Show all rooms that are currently allocated."""
+    count = 0
+    print(f"{'Room':<8}{'Type':<10}{'Customer':<20}")
     for room in rooms:
         if room["status"] == "Allocated":
-            price = f"${room['price_per_night']:.2f}"
-            print(f"{room['room_no']:<8}{room['room_type']:<10}{price:<14}{room['allocated_to']:<20}")
-            found = True
+            print(f"{room['room_no']:<8}{room['room_type']:<10}{room['allocated_to']:<20}")
+            count += 1
 
-    if not found:
+    if count == 0:
         print("No rooms are allocated right now.")
 
 
 def billing_and_deallocation():
     """Create the bill for an allocated room and release the room."""
-    room_no = int(input("Enter the room number to bill: "))
-    room = find_room(room_no)
-
-    if room is None:
-        print("Room not found.")
+    try:
+        room_no = int(input("Room number to bill: "))
+    except ValueError:  # Handles ValueError
+        print("Room number must be a whole number.")
         return
-    if room["status"] != "Allocated":
+
+    for r in rooms:
+        if r["room_no"] == room_no:
+            room = r
+            break
+
+    # room only exists if the loop above found the room number
+    try:
+        status = room["status"]
+    except NameError:  # Handles NameError
+        print("Room number not found.")
+        return
+
+    if status != "Allocated":
         print("This room is not allocated, so there is nothing to bill.")
         return
 
-    nights = int(input("Number of nights stayed: "))
-    subtotal = room["price_per_night"] * nights
-    gst = subtotal * GST_RATE
-    total = subtotal + gst
+    try:
+        nights = int(input("Number of nights stayed: "))
+    except ValueError:  # Handles ValueError
+        print("Nights must be a whole number.")
+        return
 
-    print("\n----- LANGHAM HOTELS BILL -----")
-    print(f"Customer : {room['allocated_to']}")
-    print(f"Room     : {room['room_no']} ({room['room_type']})")
-    print(f"Nights   : {nights} x ${room['price_per_night']:.2f}")
-    print(f"Subtotal : ${subtotal:.2f}")
+    if nights < 1:
+        print("Nights must be at least 1.")
+        return
+
+    # eval lets the clerk type a sum such as 20+10 (fine for a local pilot, not for a real system)
+    try:
+        discount = eval(input("Discount in dollars (0 for none, sums like 20+10 allowed): "))
+    except SyntaxError:  # Handles SyntaxError
+        print("The discount is not written correctly.")
+        return
+    except (NameError, ZeroDivisionError):
+        print("The discount must be numbers only, for example 20+10.")
+        return
+
+    try:
+        subtotal = room["price_per_night"] * nights
+        if discount < 0 or discount > subtotal:
+            print("The discount must be between 0 and the subtotal.")
+            return
+        gst = (subtotal - discount) * GST_RATE
+        total = subtotal - discount + gst
+    except TypeError:  # Handles TypeError
+        print("A value in the bill is not a number, so the bill cannot be worked out.")
+        return
+    except OverflowError:  # Handles OverflowError
+        print("The number of nights is too large to work out a bill.")
+        return
+
+    today = datetime.datetime.now().strftime("%d/%m/%Y")
+    print("----- LANGHAM Hotels Bill -----")
+    print("Date: " + today)
+    print("Customer: " + room["allocated_to"])
+    print(f"Room: {room['room_no']} ({room['room_type']})")
+    print(f"Nights: {nights} x ${room['price_per_night']:.2f}")
+    print(f"Subtotal: ${subtotal:.2f}")
+    print(f"Discount: ${discount:.2f}")
     print(f"GST (15%): ${gst:.2f}")
-    print(f"Total    : ${total:.2f}")
-    print("-------------------------------")
+    print(f"Total: ${total:.2f}")
 
-    # Release the room so it can be booked again
+    # Release the room for the next booking
     room["status"] = "Available"
     room["allocated_to"] = ""
-    print(f"Room {room_no} is now available.")
+    print("Room " + str(room["room_no"]) + " is now available.")
 
 
 def save_to_file():
-    """Save the allocated rooms to the allocation file."""
+    """Save the current room allocations to the text file."""
     allocated = []
     for room in rooms:
         if room["status"] == "Allocated":
             allocated.append(room)
 
     if len(allocated) == 0:
-        print("There are no allocated rooms to save.")
+        print("There are no allocations to save.")
         return
 
-    now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-
-    """
-    Mode "a" creates the file if it does not exist yet.
-    It also keeps older saves, so option 9 always has
-    real data to back up.
-    """
-    file = open(FILE_NAME, "a")
-    file.write("Saved on " + now + "\n")
-    for room in allocated:
-        line = f"{room['room_no']} | {room['room_type']} | ${room['price_per_night']:.2f} | {room['allocated_to']}"
-        file.write(line + "\n")
-    file.write("\n")
-    file.close()
-    print(f"{len(allocated)} allocation(s) saved to {FILE_NAME}.")
+    try:
+        file = open(FILE_NAME, "a")
+        stamp = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        file.write("Saved on " + stamp + "\n")
+        for room in allocated:
+            file.write(f"Room {room['room_no']}, {room['room_type']}, "
+                       f"${room['price_per_night']:.2f}, {room['allocated_to']}\n")
+        file.close()
+        print("Allocations saved to " + FILE_NAME + ".")
+    except IOError:  # Handles IOError
+        print("The file could not be opened or written.")
 
 
 def show_from_file():
-    """Read the allocation file and display it on the screen."""
-    file = open(FILE_NAME, "r")
-    content = file.read()
-    file.close()
+    """Display everything saved in the allocation file."""
+    try:
+        file = open(FILE_NAME, "r")
+        content = file.read()
+        file.close()
+    except FileNotFoundError:  # Handles FileNotFoundError
+        print("No file found yet. Use option 7 to save allocations first.")
+        return
 
     if content == "":
         print("The file is empty.")
     else:
-        print("\n--- Room Allocations Saved in File ---")
         print(content)
 
 
 def backup_and_clear():
-    """Copy the allocation file into a backup file, then clear it."""
-    file = open(FILE_NAME, "r")
-    content = file.read()
-    file.close()
+    """Copy the allocation file into a dated backup file, then clear it."""
+    try:
+        file = open(FILE_NAME, "r")
+        content = file.read()
+        file.close()
 
-    if content == "":
-        print("Nothing to back up, the file is already empty.")
-        return
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_name = BACKUP_PREFIX + stamp + ".txt"
+        backup = open(backup_name, "a")
+        backup.write(content)
+        backup.close()
 
-    # Colons are not allowed in Windows file names, so the time uses dashes
-    stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    backup_name = "LHMS_STUDENTID_Backup_" + stamp + ".txt"
-
-    backup = open(backup_name, "a")
-    backup.write(content)
-    backup.close()
-
-    # Mode "w" wipes the old content, so this clears the file
-    file = open(FILE_NAME, "w")
-    file.close()
-    print(f"Backup saved as {backup_name} and {FILE_NAME} has been cleared.")
+        # Opening in write mode empties the original file
+        file = open(FILE_NAME, "w")
+        file.close()
+        print("Backed up to " + backup_name + " and cleared " + FILE_NAME + ".")
+    except FileNotFoundError:  # Handles FileNotFoundError
+        print("There is no file to back up yet.")
+    except IOError:  # Handles IOError
+        print("The backup could not be completed.")
 
 
 def exit_app():
-    """Say goodbye before the program closes."""
-    print("Thank you for using the LANGHAM Hotel Management System. Goodbye!")
+    """Say goodbye and close the program."""
+    print("Thank you for using LHMS. Goodbye!")
+    exit()
 
 
 def main():
     """Show the menu and run the chosen option until the user exits."""
     while True:
-        print("\n" + "*" * 60)
-        print("            LANGHAM HOTEL MANAGEMENT SYSTEM")
-        print("                        MENU")
-        print("*" * 60)
+        print("\n===== LANGHAM Hotel Management System =====")
         print("1. Add Rooms")
         print("2. Delete Room")
         print("3. Display Rooms Details")
@@ -231,8 +298,12 @@ def main():
         print("8. Show Room Allocation from File")
         print("9. Backup & Clear File")
         print("0. Exit")
-        print("*" * 60)
-        choice = input("Enter Your Choice Number Here: ")
+
+        try:
+            choice = input("Enter your choice (0-9): ")
+        except EOFError:  # Handles EOFError
+            print("\nInput ended. Closing LHMS.")
+            exit_app()
 
         if choice == "1":
             add_room()
@@ -254,9 +325,8 @@ def main():
             backup_and_clear()
         elif choice == "0":
             exit_app()
-            break
         else:
-            print("Invalid choice. Please enter a number from the menu.")
+            print("Invalid choice. Please enter a number from 0 to 9.")
 
 
 main()
