@@ -305,25 +305,25 @@ def main():
             print("\nInput ended. Closing LHMS.")
             exit_app()
 
-        if choice = "1":
+        if choice == "1":
             add_room()
-        elif choice = "2":
+        elif choice == "2":
             delete_room()
-        elif choice = "3":
+        elif choice == "3":
             display_rooms()
-        elif choice = "4":
+        elif choice == "4":
             allocate_room()
-        elif choice = "5":
+        elif choice == "5":
             display_allocations()
-        elif choice = "6":
+        elif choice == "6":
             billing_and_deallocation()
-        elif choice = "7":
+        elif choice == "7":
             save_to_file()
-        elif choice = "8":
+        elif choice == "8":
             show_from_file()
-        elif choice = "9":
+        elif choice == "9":
             backup_and_clear()
-        elif choice = "0":
+        elif choice == "0":
             exit_app()
         else:
             print("Invalid choice. Please enter a number from 0 to 9.")
