@@ -18,8 +18,8 @@ Room rules used in this program:
 - a bill adds 15% GST after the discount is taken off
 """
 
-FILE_NAME = "LHMS_STUDENTID.txt"
-BACKUP_PREFIX = "LHMS_STUDENTID_Backup_"
+FILE_NAME = "LHMS_850009367.txt"
+BACKUP_PREFIX = "LHMS_850009367_Backup_"
 GST_RATE = 0.15
 
 rooms = [
