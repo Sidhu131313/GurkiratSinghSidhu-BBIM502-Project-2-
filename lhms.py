@@ -1,4 +1,4 @@
-# File name: LHMS.py
+# File name: lhms.py
 # Student name: GURKIRAT SINGH
 # Student ID: 850009367
 # Description: Console-based LANGHAM Hotel Management System (LHMS). It adds, deletes,
