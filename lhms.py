@@ -3,7 +3,7 @@
 # Student ID: 850009367
 # Description: Console-based LANGHAM Hotel Management System (LHMS). It adds, deletes,
 #              allocates and bills rooms, and saves room allocations to a text file.
-# Date: 08/10/2026
+# Date: 11/10/2026
 
 try:
     import datetime
@@ -39,7 +39,7 @@ def add_room():
         print("Room number and price must be numbers.")
         return
 
-    if price <= 0:
+    if price < 0:
         print("Price must be more than 0.")
         return
 
