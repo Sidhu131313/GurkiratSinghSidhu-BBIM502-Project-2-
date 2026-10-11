@@ -39,7 +39,7 @@ def add_room():
         print("Room number and price must be numbers.")
         return
 
-    if price < 0:
+    if price <= 0:
         print("Price must be more than 0.")
         return
 
